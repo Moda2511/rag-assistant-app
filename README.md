@@ -1,162 +1,167 @@
-# RAG Assistant for Legal Contract Review
+# RAG Contract Assistant
 
-An end-to-end Retrieval-Augmented Generation (RAG) application for querying and analyzing commercial legal contracts.
+A Retrieval-Augmented Generation (RAG) application for intelligent question answering over legal contracts.
 
-The system allows users to ask natural-language questions about contracts and receive answers grounded in relevant contract passages retrieved from a vector database.
+The system allows users to ask questions about commercial contracts and receive grounded answers based on the retrieved contract content.
 
-The project combines semantic search, vector retrieval, and local Large Language Model (LLM) generation through a FastAPI backend and Streamlit frontend.
+The project combines semantic search, vector databases, local LLM inference, a FastAPI backend, and a Streamlit frontend.
 
 ---
 
 ## Overview
 
-This project implements a complete RAG pipeline for legal contract question answering using the **Contract Understanding Atticus Dataset (CUAD)**.
+This project implements an end-to-end RAG pipeline for legal contract analysis.
 
-The application provides:
+Instead of asking an LLM to answer questions using only its internal knowledge, the system:
 
-* Semantic retrieval of relevant contract passages.
-* Local vector storage using ChromaDB.
-* Sentence Transformer embeddings.
-* Local LLM-based answer generation using Ollama.
-* FastAPI backend for the RAG API.
-* Streamlit frontend for user interaction.
-* Automated backend tests.
-* Docker support for the backend.
-* A reproducible notebook for the RAG pipeline.
+1. Loads legal contract documents.
+2. Extracts text from the documents.
+3. Splits the text into manageable chunks.
+4. Converts chunks into vector embeddings.
+5. Stores the embeddings in ChromaDB.
+6. Retrieves the most relevant chunks for a user's question.
+7. Sends the retrieved context to a local LLM.
+8. Generates a grounded answer based on the retrieved contract content.
+9. Displays the answer through a Streamlit web interface.
 
-The main goal is to build an explainable legal-document assistant that retrieves relevant contractual evidence before generating an answer.
-
-> **Disclaimer:** This project is for educational and research purposes. It is not a substitute for professional legal advice.
+The application is designed for educational and research purposes and should not be considered a substitute for professional legal advice.
 
 ---
 
-# Architecture
+## Architecture
 
 ```text
-                         User
-                           │
-                           ▼
-                 ┌───────────────────┐
-                 │ Streamlit         │
-                 │ Frontend          │
-                 └─────────┬─────────┘
-                           │ HTTP
-                           ▼
-                 ┌───────────────────┐
-                 │ FastAPI           │
-                 │ Backend           │
-                 └─────────┬─────────┘
-                           │
-                    User Question
-                           │
-                           ▼
-                 ┌───────────────────┐
-                 │ Query Embedding   │
-                 │ all-MiniLM-L6-v2  │
-                 └─────────┬─────────┘
-                           │
-                           ▼
-                 ┌───────────────────┐
-                 │ ChromaDB          │
-                 │ Vector Retrieval  │
-                 └─────────┬─────────┘
-                           │
-                    Retrieved Context
-                           │
-                           ▼
-                 ┌───────────────────┐
-                 │ Ollama             │
-                 │ Qwen 2.5 7B       │
-                 └─────────┬─────────┘
-                           │
-                           ▼
-                    Grounded Answer
-                           │
-                           ▼
-                 ┌───────────────────┐
-                 │ Streamlit         │
-                 │ Frontend          │
-                 └───────────────────┘
+                    ┌──────────────────────┐
+                    │      User            │
+                    │  Legal Question      │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │  Streamlit Frontend  │
+                    │      Port 8501       │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │    FastAPI Backend   │
+                    │      Port 8000       │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │      Retriever       │
+                    │    ChromaDB Search   │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │ Relevant Contract    │
+                    │      Chunks           │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │   Ollama + Qwen      │
+                    │      2.5 7B           │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │ Grounded Answer      │
+                    │ + Source Information │
+                    └──────────────────────┘
 ```
 
 ---
 
-# RAG Pipeline
-
-The RAG pipeline follows these steps:
-
-1. Load CUAD contract documents.
-2. Extract text from the documents.
-3. Split documents into meaningful chunks.
-4. Generate embeddings using `all-MiniLM-L6-v2`.
-5. Store embeddings in ChromaDB.
-6. Convert the user's question into an embedding.
-7. Retrieve the most relevant contract chunks.
-8. Pass the retrieved context to the LLM.
-9. Generate a grounded answer using Qwen 2.5 7B through Ollama.
-10. Return the answer and relevant source information to the frontend.
+## RAG Pipeline
 
 ```text
-CUAD Documents
-      │
-      ▼
-Text Extraction
-      │
-      ▼
-Document Chunking
-      │
-      ▼
-all-MiniLM-L6-v2
-      │
-      ▼
+Contract PDFs
+     │
+     ▼
+PDF Text Extraction
+     │
+     ▼
+Text Cleaning
+     │
+     ▼
+Chunking
+     │
+     ▼
+Embeddings
+(all-MiniLM-L6-v2)
+     │
+     ▼
 ChromaDB
-      │
-      │
-      │ User Query
-      ▼
+Vector Store
+     │
+     │
+     │ User Question
+     ▼
 Semantic Retrieval
-      │
-      ▼
-Relevant Contract Context
-      │
-      ▼
+     │
+     ▼
+Relevant Context
+     │
+     ▼
 Qwen 2.5 7B
-      │
-      ▼
+via Ollama
+     │
+     ▼
 Grounded Answer
 ```
 
 ---
 
-# Tech Stack
+## Tech Stack
 
-| Component            | Technology            |
-| -------------------- | --------------------- |
-| Programming Language | Python 3.13           |
-| RAG Framework        | Custom RAG Pipeline   |
-| Embeddings           | Sentence Transformers |
-| Embedding Model      | `all-MiniLM-L6-v2`    |
-| Vector Database      | ChromaDB              |
-| LLM Runtime          | Ollama                |
-| Language Model       | Qwen 2.5 7B           |
-| Backend              | FastAPI               |
-| API Server           | Uvicorn               |
-| Frontend             | Streamlit             |
-| PDF Processing       | pypdf                 |
-| Data Processing      | Pandas / NumPy        |
-| Testing              | Pytest                |
-| Containerization     | Docker                |
-| Dataset              | CUAD                  |
+### Programming
+
+* Python 3.13
+* Jupyter Notebook
+
+### Data Processing
+
+* Pandas
+* NumPy
+* PyPDF
+
+### RAG / Vector Search
+
+* ChromaDB
+* Sentence Transformers
+* `all-MiniLM-L6-v2`
+
+### LLM
+
+* Ollama
+* Qwen 2.5 7B
+
+### Backend
+
+* FastAPI
+* Uvicorn
+
+### Frontend
+
+* Streamlit
+
+### Version Control
+
+* Git
+* GitHub
 
 ---
 
-# Dataset
+## Dataset
 
-## Contract Understanding Atticus Dataset (CUAD)
+This project uses the **CUAD — Contract Understanding Atticus Dataset**.
 
-This project uses the **Contract Understanding Atticus Dataset (CUAD)** for legal contract understanding and question answering.
+CUAD is a dataset containing commercial legal contracts annotated for contract review tasks.
 
-CUAD contains commercial contracts with annotations covering multiple contractual clause categories.
+The dataset includes contracts and annotations covering multiple contract clause categories.
 
 Examples include:
 
@@ -166,168 +171,80 @@ Examples include:
 * Assignment
 * Change of Control
 * Indemnification
-* Insurance
-* Renewal Terms
+* Limitation of Liability
 * Non-Compete
+* Renewal
+* Effective Date
+* Payment Terms
+
+The dataset is used to build a legal-domain RAG system capable of retrieving relevant contract information and answering questions about it.
 
 ---
 
-# Dataset Download
+## Dataset Download
 
-The CUAD dataset was downloaded from the Hugging Face dataset repository using the Hugging Face CLI.
+The CUAD dataset was downloaded from Hugging Face using:
 
 ```bash
 hf download theatticusproject/cuad --repo-type dataset --local-dir data/CUAD
 ```
 
-If the Hugging Face CLI is not installed:
+The raw contract corpus is intentionally excluded from GitHub because of its size and repository management considerations.
 
-```bash
-pip install -U "huggingface_hub[cli]"
-```
-
-Then download the dataset:
-
-```bash
-hf download theatticusproject/cuad --repo-type dataset --local-dir data/CUAD
-```
-
-The expected local location is:
-
-```text
-data/
-└── CUAD/
-```
-
-### Important
-
-The raw CUAD contract corpus is intentionally **not included in this GitHub repository** because of its size.
-
-The following directories are excluded through `.gitignore`:
-
-```text
-data/CUAD/CUAD_v1/full_contract_pdf/
-data/CUAD/CUAD_v1/full_contract_txt/
-data/CUAD/CUAD_v1/label_group_xlsx/
-```
-
-The large `CUAD_v1.json` file is also excluded.
-
-The dataset should therefore be downloaded locally before reproducing the complete RAG pipeline.
+To reproduce the project, download the dataset using the command above.
 
 ---
 
-# Embedding Model
+## Embedding Model
 
-The project uses the Sentence Transformers model:
-
-```text
-all-MiniLM-L6-v2
-```
-
-The model converts both contract chunks and user queries into vector representations.
-
-These embeddings are used for semantic similarity search in ChromaDB.
-
-### Embedding Flow
+The project uses:
 
 ```text
-Contract Chunk
-      │
-      ▼
-all-MiniLM-L6-v2
-      │
-      ▼
-Vector Representation
-      │
-      ▼
-ChromaDB
+sentence-transformers/all-MiniLM-L6-v2
 ```
 
-For a user query:
+The model converts contract chunks and user questions into numerical vector representations.
 
-```text
-User Question
-      │
-      ▼
-all-MiniLM-L6-v2
-      │
-      ▼
-Query Vector
-      │
-      ▼
-Similarity Search
-      │
-      ▼
-Relevant Contract Chunks
-```
+These vectors are stored in ChromaDB and used for semantic similarity search.
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```text
 rag-assistant-project/
 │
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   └── routes/
-│   │   │       └── query.py
-│   │   │
-│   │   ├── core/
-│   │   │   └── config.py
-│   │   │
-│   │   ├── schemas/
-│   │   │   └── query.py
-│   │   │
-│   │   ├── services/
-│   │   │   ├── generation.py
-│   │   │   └── retrieval.py
-│   │   │
-│   │   ├── utils/
-│   │   │   └── logging_config.py
-│   │   │
-│   │   └── main.py
+│   │   ├── main.py
+│   │   ├── ...
 │   │
-│   ├── tests/
-│   │   └── test_query.py
-│   │
-│   ├── Dockerfile
-│   ├── pytest.ini
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── ...
 │
 ├── frontend/
-│   ├── api_client.py
 │   ├── app.py
-│   └── requirements.txt
-│
-├── notebooks/
-│   └── rag_pipeline.ipynb
+│   └── api_client.py
 │
 ├── data/
 │   └── CUAD/
-│       ├── CUAD_v1/
-│       └── README.md
+│       └── CUAD_v1/
+│           ├── master_clauses.csv
+│           ├── master_clauses.xlsx
+│           └── ...
 │
-├── .env.example
+├── notebooks/
+│   └── ...
+│
+├── chroma_db/
+│   └── ...
+│
 ├── .gitignore
 ├── README.md
-└── requirements.txt
+└── ...
 ```
 
----
-
-# Requirements
-
-Before running the project, install:
-
-* Python 3.10 or newer
-* Git
-* Ollama
-* Hugging Face CLI
-
-Python 3.13 was used during development.
+> Note: Large raw datasets and generated vector stores are excluded from GitHub through `.gitignore`.
 
 ---
 
@@ -339,7 +256,7 @@ Python 3.13 was used during development.
 git clone https://github.com/Moda2511/rag-assistant-app.git
 ```
 
-Enter the project directory:
+Then:
 
 ```bash
 cd rag-assistant-app
@@ -349,7 +266,7 @@ cd rag-assistant-app
 
 ## 2. Create a Virtual Environment
 
-On Windows:
+Windows:
 
 ```cmd
 python -m venv .venv
@@ -365,31 +282,29 @@ Activate it:
 
 ## 3. Install Dependencies
 
-Install the main dependencies:
-
-```cmd
-pip install -r requirements.txt
-```
-
-Install backend dependencies:
+Install the backend requirements:
 
 ```cmd
 pip install -r backend\requirements.txt
 ```
 
-Install frontend dependencies:
+If additional notebook dependencies are required:
 
 ```cmd
-pip install -r frontend\requirements.txt
+pip install pandas numpy chromadb sentence-transformers pypdf ollama python-dotenv
 ```
 
 ---
 
 # Ollama Setup
 
-The project uses Ollama for local LLM inference.
+Install Ollama on your machine.
 
-Install Ollama and make sure the Ollama service is running.
+Verify the installation:
+
+```cmd
+ollama version
+```
 
 Pull the required model:
 
@@ -397,89 +312,76 @@ Pull the required model:
 ollama pull qwen2.5:7b
 ```
 
-Verify the installed model:
+Verify that the model is available:
 
 ```cmd
 ollama list
 ```
 
-The application expects Ollama to be available locally.
-
-Default Ollama address:
-
-```text
-http://localhost:11434
-```
+The project uses Ollama for local LLM inference.
 
 ---
 
 # Environment Variables
 
-Create the environment file from the example:
+Create a `.env` file in the project root if your implementation requires environment configuration.
 
-```cmd
-copy .env.example .env
+Example:
+
+```env
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:7b
+CHROMA_PATH=chroma_db
 ```
-
-If required by the backend:
-
-```cmd
-copy backend\.env.example backend\.env
-```
-
-Example environment configuration:
 
 | Variable          | Description             | Example                  |
 | ----------------- | ----------------------- | ------------------------ |
 | `OLLAMA_BASE_URL` | Ollama server URL       | `http://localhost:11434` |
 | `OLLAMA_MODEL`    | LLM used for generation | `qwen2.5:7b`             |
-| `CHROMA_PATH`     | ChromaDB storage path   | `./chroma_db`            |
+| `CHROMA_PATH`     | ChromaDB storage path   | `chroma_db`              |
 
-> Do not commit `.env` files, API keys, passwords, or other secrets to GitHub.
+Do not commit `.env` to GitHub.
 
 ---
 
-# Running the RAG Pipeline
+# Preparing the Dataset
 
-The main RAG pipeline is available in:
+Download CUAD:
 
-```text
-notebooks/rag_pipeline.ipynb
+```bash
+hf download theatticusproject/cuad --repo-type dataset --local-dir data/CUAD
 ```
 
-Run the notebook to reproduce the data preparation and vector-store creation process.
+The raw PDF and TXT corpus is intentionally ignored by Git.
 
-The notebook covers:
+After downloading the dataset, follow the project notebook/pipeline to:
 
-1. Dataset loading.
-2. Document processing.
-3. Text extraction.
-4. Chunking.
-5. Embedding generation.
-6. Vector-store creation.
-7. Retrieval.
-8. RAG querying.
-9. Evaluation.
-
-The generated vector store is excluded from GitHub when it is large.
+1. Load the contracts.
+2. Extract the text.
+3. Clean the text.
+4. Split documents into chunks.
+5. Generate embeddings.
+6. Store the embeddings in ChromaDB.
 
 ---
 
 # Running the Backend
 
-Open a terminal in the project directory.
+Open a terminal.
+
+Navigate to the project:
 
 ```cmd
 cd C:\Users\Lenovo\rag-assistant-project
 ```
 
-Activate the virtual environment:
+Activate the environment:
 
 ```cmd
 .venv\Scripts\activate
 ```
 
-Enter the backend directory:
+Go to the backend:
 
 ```cmd
 cd backend
@@ -491,7 +393,7 @@ Start FastAPI:
 uvicorn app.main:app --reload
 ```
 
-The backend will run at:
+The backend will normally be available at:
 
 ```text
 http://127.0.0.1:8000
@@ -499,21 +401,9 @@ http://127.0.0.1:8000
 
 ---
 
-# Backend Health Check
+## FastAPI Documentation
 
-Open:
-
-```text
-http://127.0.0.1:8000/health
-```
-
-A successful response should indicate that the backend is running.
-
----
-
-# Swagger API Documentation
-
-FastAPI provides an interactive API documentation interface.
+FastAPI automatically provides interactive API documentation.
 
 Open:
 
@@ -521,27 +411,47 @@ Open:
 http://127.0.0.1:8000/docs
 ```
 
-The Swagger interface allows you to inspect and test the available API endpoints.
+You can use Swagger UI to test the available API endpoints.
+
+---
+
+## Health Check
+
+The health endpoint can be accessed at:
+
+```text
+http://127.0.0.1:8000/health
+```
+
+Example response:
+
+```json
+{
+  "status": "ok"
+}
+```
 
 ---
 
 # Running the Frontend
 
-Keep the backend terminal running.
+Keep the backend running.
 
 Open a second terminal.
+
+Navigate to the project:
 
 ```cmd
 cd C:\Users\Lenovo\rag-assistant-project
 ```
 
-Activate the virtual environment:
+Activate the environment:
 
 ```cmd
 .venv\Scripts\activate
 ```
 
-Start Streamlit:
+Run Streamlit:
 
 ```cmd
 streamlit run frontend/app.py
@@ -553,17 +463,25 @@ The frontend will normally be available at:
 http://localhost:8501
 ```
 
-Open the URL in your browser.
+Open the address in your browser.
 
 ---
 
 # API Reference
 
-## POST `/query`
+The backend exposes an API for querying the RAG system.
 
-The `/query` endpoint accepts a natural-language question and returns an answer generated from retrieved contract context.
+The exact endpoints are documented automatically through FastAPI Swagger UI:
 
-### Example Request
+```text
+http://127.0.0.1:8000/docs
+```
+
+---
+
+## Example API Request
+
+Example using `curl`:
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/query" ^
@@ -571,26 +489,19 @@ curl -X POST "http://127.0.0.1:8000/query" ^
   -d "{\"question\":\"What is the governing law of this agreement?\"}"
 ```
 
-### Example Question
+Depending on the backend implementation, the request body may contain additional parameters such as:
 
-```text
-What is the governing law of this agreement?
-```
+* `question`
+* `top_k`
+* document or contract identifiers
 
-The backend:
-
-1. Receives the question.
-2. Generates the query embedding.
-3. Searches ChromaDB.
-4. Retrieves relevant contract passages.
-5. Sends the retrieved context to Qwen 2.5 7B.
-6. Returns the generated answer.
+Use the Swagger documentation to confirm the currently available request schema.
 
 ---
 
 # Example Questions
 
-The application can be used for questions such as:
+The system can answer questions such as:
 
 ### Governing Law
 
@@ -612,161 +523,196 @@ Can either party terminate this agreement?
 If yes, under what conditions?
 ```
 
-### Assignment and Change of Control
+### Assignment
 
 ```text
-Does this agreement contain any restrictions on assignment or change of control?
+Does this agreement contain any restrictions on assignment?
 Explain the relevant provision.
 ```
 
----
-
-# Evaluation
-
-The RAG system was evaluated as part of the project evaluation process.
-
-## Phase 2.6 Results
-
-The final evaluation results should be reported here based on the actual Phase 2.6 evaluation output.
-
-| Metric                   |         Result |
-| ------------------------ | -------------: |
-| Retrieval Evaluation     | **ADD RESULT** |
-| Answer Quality           | **ADD RESULT** |
-| Context Relevance        | **ADD RESULT** |
-| Faithfulness / Grounding | **ADD RESULT** |
-
-> The values above should be replaced with the actual metrics produced during Phase 2.6. No evaluation values are fabricated in this README.
-
----
-
-# Screenshots
-
-Screenshots of the running application should be added to the repository.
-
-Recommended structure:
+### Change of Control
 
 ```text
-docs/
-└── screenshots/
-    ├── frontend.png
-    └── backend-swagger.png
-```
-
-## Frontend
-
-Add a screenshot showing the Streamlit RAG Assistant interface.
-
-```markdown
-![RAG Assistant Frontend](docs/screenshots/frontend.png)
-```
-
-## Backend
-
-Add a screenshot showing the FastAPI Swagger documentation.
-
-```markdown
-![FastAPI Swagger](docs/screenshots/backend-swagger.png)
+Does the agreement contain a change of control provision?
 ```
 
 ---
 
-# Demo Workflow
+# Grounded Generation
 
-The complete application workflow is:
+The system is designed to reduce hallucinations by providing retrieved contract context to the LLM.
+
+The generation process follows:
 
 ```text
-User
- │
- ▼
-Streamlit Frontend
- │
- ▼
-FastAPI Backend
- │
- ▼
-Query Embedding
- │
- ▼
-ChromaDB Retrieval
- │
- ▼
-Relevant Contract Context
- │
- ▼
-Qwen 2.5 7B via Ollama
- │
- ▼
+User Question
+      │
+      ▼
+Semantic Retrieval
+      │
+      ▼
+Relevant Contract Chunks
+      │
+      ▼
+Prompt + Retrieved Context
+      │
+      ▼
+Qwen 2.5 7B
+      │
+      ▼
 Grounded Answer
- │
- ▼
-Streamlit Frontend
 ```
+
+The LLM is instructed to base its response on the retrieved contract information rather than relying only on general knowledge.
+
+---
+
+# Why RAG?
+
+Large Language Models can generate fluent answers, but they may not contain the specific information required to answer questions about private or specialized documents.
+
+RAG addresses this by retrieving relevant information from a document collection before generating the answer.
+
+For this project:
+
+```text
+Legal Contracts
+      ↓
+Vector Database
+      ↓
+Relevant Contract Sections
+      ↓
+LLM
+      ↓
+Contract-Specific Answer
+```
+
+This makes the system more suitable for document-based question answering.
 
 ---
 
 # Testing
 
-Backend tests can be executed using:
+The project includes tests for the backend and/or RAG components depending on the current implementation.
+
+Run available tests with:
 
 ```cmd
-cd backend
 pytest
 ```
 
-The test suite covers the backend query functionality.
+For more detailed output:
+
+```cmd
+pytest -v
+```
 
 ---
 
 # Docker
 
-The backend includes a Dockerfile.
+The project can also be containerized using Docker.
 
-Build the backend image:
+A typical project setup may contain:
 
-```bash
-docker build -t rag-assistant-backend ./backend
+```text
+Dockerfile
 ```
 
-Run the container:
+The Docker configuration can be used to package the application and simplify deployment.
 
-```bash
-docker run -p 8000:8000 rag-assistant-backend
-```
-
-For a complete RAG deployment, the application also requires access to the vector store and Ollama model.
+For local development, running the backend and frontend directly through the Python virtual environment is recommended.
 
 ---
 
-# GitHub and Version Control
+# GitHub
 
-The project uses Git for version control.
+The project is maintained using Git.
 
-The repository excludes:
+Initialize the repository:
 
-* Python virtual environments.
-* Environment files containing secrets.
-* Logs.
-* Raw CUAD PDF corpus.
-* Raw CUAD TXT corpus.
-* CUAD label-group files.
-* Large dataset files.
-* Large vector stores.
-* Generated temporary files.
+```bash
+git init
+```
 
-This keeps the repository lightweight while allowing another developer to reproduce the dataset locally using the documented Hugging Face download command.
+Add files:
+
+```bash
+git add .
+```
+
+Create a commit:
+
+```bash
+git commit -m "RAG assistant: notebook, FastAPI backend, frontend"
+```
+
+Connect the GitHub repository:
+
+```bash
+git remote add origin https://github.com/Moda2511/rag-assistant-app.git
+```
+
+Set the main branch:
+
+```bash
+git branch -M main
+```
+
+Push:
+
+```bash
+git push -u origin main
+```
+
+Repository:
+
+https://github.com/Moda2511/rag-assistant-app
+
+---
+
+# .gitignore
+
+The project excludes files that should not be committed to GitHub, including:
+
+```text
+.venv/
+__pycache__/
+.env
+*.log
+large CUAD raw corpus
+vector stores
+temporary files
+model caches
+```
+
+The raw CUAD corpus can be downloaded again using the Hugging Face command described above.
 
 ---
 
 # Limitations
 
-* The application currently depends on a locally running Ollama instance.
-* The raw CUAD contract corpus is not included in the repository.
-* Large vector stores are not committed to GitHub.
-* Retrieval quality depends on document chunking and embedding quality.
-* Generation quality depends on the retrieved context and language model.
-* Legal answers should be verified against the original contract.
-* This project is an educational/research system and does not provide professional legal advice.
+This project is an educational RAG implementation and has several limitations.
+
+### Legal Disclaimer
+
+The generated answers should not be considered professional legal advice.
+
+### Retrieval Quality
+
+The quality of the final answer depends heavily on the quality of the retrieved chunks.
+
+### Local LLM
+
+The application relies on a locally running Ollama model, so response quality may vary depending on the selected model and available hardware.
+
+### Dataset
+
+The application is currently designed around the CUAD legal-contract domain.
+
+### Large Corpus
+
+The complete raw dataset is not stored in the GitHub repository.
 
 ---
 
@@ -774,19 +720,21 @@ This keeps the repository lightweight while allowing another developer to reprod
 
 Possible future improvements include:
 
-* Hybrid keyword and semantic retrieval.
-* Cross-encoder reranking.
-* Improved document chunking.
-* Better page-level citation handling.
-* More advanced RAG evaluation.
-* Hallucination detection.
-* Query rewriting.
-* Multi-document comparison.
-* User authentication.
-* Cloud deployment.
-* Support for additional legal document formats.
-* Improved legal clause classification.
-* Production monitoring and logging.
+* Hybrid search
+* Reranking
+* Better chunking strategies
+* Metadata-aware retrieval
+* Citation improvements
+* Multi-document comparison
+* Contract clause extraction
+* Evaluation with automated RAG metrics
+* Improved hallucination detection
+* Authentication
+* Cloud deployment
+* Production database
+* Larger or more capable LLMs
+* Streaming responses
+* Conversation memory
 
 ---
 
@@ -794,34 +742,62 @@ Possible future improvements include:
 
 The project currently includes:
 
-* [x] CUAD dataset integration
-* [x] Document processing
-* [x] Semantic embeddings
-* [x] ChromaDB vector retrieval
-* [x] Local LLM generation
-* [x] RAG pipeline notebook
+* [x] CUAD legal contract dataset
+* [x] Document processing pipeline
+* [x] Text chunking
+* [x] Sentence Transformer embeddings
+* [x] ChromaDB vector search
+* [x] Local Ollama LLM
+* [x] RAG question answering
 * [x] FastAPI backend
 * [x] Streamlit frontend
-* [x] Backend tests
-* [x] Dockerfile
-* [x] GitHub repository
-* [ ] Final Phase 2.6 evaluation values
-* [ ] Final project screenshots
+* [x] Git/GitHub integration
+* [x] `.gitignore`
+* [x] Project documentation
 
 ---
 
-# Repository
+# Author
+
+**Mahmoud Abd Elghani**
+
+Computer Science & Artificial Intelligence Student
+
+Damietta University, Egypt
 
 GitHub:
 
-https://github.com/Moda2511/rag-assistant-app
+https://github.com/Moda2511
+
+LinkedIn:
+
+https://www.linkedin.com/in/mahmoud-abdelghani-ghanem
 
 ---
 
 # License and Dataset Usage
 
-This project is intended for educational and portfolio purposes.
+This project is intended for educational and research purposes.
 
-The CUAD dataset is a third-party dataset. Users should review and comply with the dataset's original license, terms of use, and attribution requirements when downloading and using it.
+The CUAD dataset is provided by The Atticus Project. Users should review and comply with the dataset's own license and usage terms when downloading or redistributing the data.
 
-The project code and the CUAD dataset are separate components and may be subject to different licensing terms.
+The raw dataset is not included in this repository.
+
+---
+
+# Acknowledgements
+
+* The Atticus Project for CUAD
+* Hugging Face for dataset hosting
+* Sentence Transformers
+* ChromaDB
+* Ollama
+* Qwen
+* FastAPI
+* Streamlit
+
+---
+
+## Repository
+
+https://github.com/Moda2511/rag-assistant-app
